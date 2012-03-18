@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from mechanize import Browser
+from mechanize import Browser, ControlNotFoundError
 from mechanize import _http
 from pyquery import PyQuery
 from collections import namedtuple
@@ -81,23 +81,23 @@ def export():
     if not creds:
         return
     """
-    br = Browser()
-    br.set_handle_robots(False)
-    br.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
+    b = Browser()
+    b.set_handle_robots(False)
+    b.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
 
-    br.set_handle_equiv(True)
-    br.set_handle_gzip(True)
-    br.set_handle_redirect(True)
-    br.set_handle_referer(True)
-    br.set_handle_robots(False)
+    b.set_handle_equiv(True)
+    b.set_handle_gzip(True)
+    b.set_handle_redirect(True)
+    b.set_handle_referer(True)
+    b.set_handle_robots(False)
 
     # Follows refresh 0 but not hangs on refresh > 0
-    br.set_handle_refresh(_http.HTTPRefreshProcessor(), max_time=1)
+    b.set_handle_refresh(_http.HTTPRefreshProcessor(), max_time=1)
 
     # Want debugging messages?
-    br.set_debug_http(True)
-    br.set_debug_redirects(True)
-    br.set_debug_responses(True)
+    b.set_debug_http(True)
+    b.set_debug_redirects(True)
+    b.set_debug_responses(True)
 
     def make_password(password, key, alphabet):
 
@@ -135,28 +135,43 @@ def export():
         return
 
     print 'Opening main page...'
-    br.open('http://www.nab.com.au')
-    write_step('www.nab.com.au.html', br.response().read())
-    #br.set_cookie("lastLogin=0; expires=Sat, 08 Sep 2012 12:46:52 GMT; path=/")
+    b.open('http://www.nab.com.au')
+    write_step('www.nab.com.au.html', b.response().read())
     print 'OK'
 
     print 'Opening login redir page...'
-    br.open('http://www.nab.com.au/cgi-bin/ib/301_start.pl?browser=correct')
-    #write_step('pre-ib.html', br.response().read())
+    b.open('http://www.nab.com.au/cgi-bin/ib/301_start.pl?browser=correct')
     print 'OK'
 
     print 'Opening real login page...'
-    br.open('https://ib.nab.com.au/nabib/index.jsp')
-    #write_step('ib.html', br.response().read())
+    b.open('https://ib.nab.com.au/nabib/index.jsp')
     print 'OK'
 
+    b.select_form(nr=0)
+    try:
+        webKeyCtrl = b.form.find_control(id='webKey')
+        webAlphaCtrl = b.form.find_control(id='webAlpha')
+    except ControlNotFoundError:
+        print 'Cannot find necessary login controls, quitting'
+        return
 
-# webKey - hidden input with encoding key?
-# webAlpha - range of target characters?
-# calls encode(password, key, alphabet)
+    webKey = webKeyCtrl.value
+    webAlpha = webAlphaCtrl.value
+    newPassword = make_password(creds[1], webKey, webAlpha)
 
+    usernameCtrl = b.form.find_control(name='userid')
+    passwordCtrl = b.form.find_control(name='password')
+    usernameCtrl.value = creds[0]
+    passwordCtrl.value = newPassword
 
+    b_data = b.form.find_control(name='browserData')
+    b_data.readonly = False
+    b_data.value = '1332067415674;z=-660*-600;s=1440x900x24;h=325b2e41;l=en-US;p=MacIntel;i=0;j=7;k=0;c=81d6c46c:,799e53ad:,f67180ac:,c801b011:,9ed81ce8:,68bab54a:,3db529ef,97362cfc;'
 
+    b.form.new_control('text', 'hidden', {'name': 'login', 'value': 'Login'})
+    b.submit()
+
+    write_step('logged-in.html', b.response().read())
 
 
 if __name__ == "__main__":
