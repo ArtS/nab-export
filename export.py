@@ -10,7 +10,7 @@ import re
 Transaction = namedtuple('Transaction', ['date', 'name', 'desc', 'amount'])
 
 
-def getCredentials():
+def get_credentials():
 
     try:
         with open('.credentials', 'r') as f:
@@ -99,22 +99,61 @@ def export():
     br.set_debug_redirects(True)
     br.set_debug_responses(True)
 
+    def make_password(password, key, alphabet):
+
+        # No idea why this is neeed. Seems to check for duplicates
+        # Why they didn't do that on server? Stupid...
+        for i in range(0, len(alphabet)):
+            if i != alphabet.index(alphabet[i]):
+                alphabet = alphabet[0, i] + alphabet[i+1:]
+
+        # Now here's funny bit.
+        # We take a character from password and corresponding (by index) character from
+        # password key (which changes every page load).
+        # Then we calculate the length between pasword chararcer and corersponding
+        # key character in the alphabet.
+        r = []
+        for i in range(0, len(password)):
+
+            if password[i] in alphabet:
+                pi = alphabet.index(password[i])
+                ki = alphabet.index(key[i])
+                ni = pi - ki
+                if ni < 0:
+                    ni = ni + len(alphabet)
+                r.append(alphabet[ni])
+
+        return ''.join(r)
+
+    # Test case for password 'encoding' function.
+    #hashedPwd = make_password('qqqqqqqq', 'jTECuQc6', '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+    #expectedPwd = '7xMOWAek'
+    #print hashedPwd + ' == ' + expectedPwd
+
+    creds = get_credentials()
+    if not creds:
+        return
+
     print 'Opening main page...'
     br.open('http://www.nab.com.au')
     write_step('www.nab.com.au.html', br.response().read())
-    br.set_cookie("lastLogin=0; expires=Sat, 08 Sep 2012 12:46:52 GMT; path=/")
+    #br.set_cookie("lastLogin=0; expires=Sat, 08 Sep 2012 12:46:52 GMT; path=/")
     print 'OK'
 
     print 'Opening login redir page...'
     br.open('http://www.nab.com.au/cgi-bin/ib/301_start.pl?browser=correct')
-    write_step('pre-ib.html', br.response().read())
+    #write_step('pre-ib.html', br.response().read())
     print 'OK'
 
     print 'Opening real login page...'
     br.open('https://ib.nab.com.au/nabib/index.jsp')
-    write_step('ib.html', br.response().read())
+    #write_step('ib.html', br.response().read())
     print 'OK'
 
+
+# webKey - hidden input with encoding key?
+# webAlpha - range of target characters?
+# calls encode(password, key, alphabet)
 
 
 
