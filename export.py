@@ -7,16 +7,20 @@ from mechanize import _http
 from pyquery import PyQuery
 from collections import namedtuple
 
-from lib import make_password, get_credentials
+from lib import make_password, get_credentials, write_step, read_step
 
 
 Transaction = namedtuple('Transaction', ['date', 'name', 'desc', 'amount'])
 
 
-def write_step(name, content):
+def check_url(b, expected_url):
 
-    with open(name, 'w') as f:
-        f.write(content)
+    if b.geturl() != expected_url:
+        print('\tExpected URL: ', loggedin_url)
+        print('\tCurrent URL: ', b.geturl())
+        return False
+
+    return True
 
 
 def login():
@@ -80,7 +84,35 @@ def login():
     b.form.new_control('text', 'hidden', {'name': 'login', 'value': 'Login'})
     b.submit()
 
+    if not check_url(b, 'https://ib.nab.com.au/nabib/acctInfo_acctBal.ctl'):
+        print('Error logging in.')
+        return None
+
     return b
+
+
+Account = namedtuple('Account', ['acc_id', 'acc_type'])
+
+
+def get_accounts(text):
+
+    pq = PyQuery(text)
+    account_links = pq.find('#accountBalances_nonprimary_subaccounts a.accountNickname')
+    if len(account_links) == 0:
+        print('\tNo accounts found.')
+        return
+
+    accounts = []
+    for link in account_links:
+
+        params = re.findall("'(.*?)'", link.attrib['href'])
+        if len(params) != 2:
+            print('\tError: incorrect HREF for account: ', link.attrib['href'])
+            return None
+
+        accounts.append(params)
+
+    return accounts
 
 
 def export():
@@ -90,7 +122,22 @@ def export():
         return
 
     response = b.response().read()
-    write_step('logged-in.html', response)
+    #response = read_step('logged-in.html')
+
+    # Get all account names
+    accounts = get_accounts(response)
+    if not accounts:
+        return
+
+    b.select_form(name='submitForm')
+    b.form.set_all_readonly(False)
+    b.form.action = 'https://ib.nab.com.au/nabib/transactionHistoryGetSettings.ctl'
+    b.form['account'] = accounts[0][0]
+    b.form['accountType'] = accounts[0][1]
+    b.submit()
+
+    response = b.response().read()
+    write_step(accounts[0][0] + '.html', response)
 
 
 if __name__ == "__main__":

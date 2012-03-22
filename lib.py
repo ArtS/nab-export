@@ -1,5 +1,17 @@
 
 
+def write_step(name, content):
+
+    with open(name, 'w') as f:
+        f.write(content)
+
+
+def read_step(name):
+
+    with open(name, 'r') as r:
+        return r.read()
+
+
 def get_credentials():
 
     try:
