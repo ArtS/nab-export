@@ -85,12 +85,15 @@ def login():
     b_data.value = '1332067415674;z=-660*-600;s=1440x900x24;h=325b2e41;l=en-US;p=MacIntel;i=0;j=7;k=0;c=81d6c46c:,799e53ad:,f67180ac:,c801b011:,9ed81ce8:,68bab54a:,3db529ef,97362cfc;'
 
     b.form.new_control('text', 'hidden', {'name': 'login', 'value': 'Login'})
+
+    print('Logging in...')
     b.submit()
 
     if not check_url(b, logged_in_url):
         print('Error logging in.')
         return None
 
+    print('Logged in!')
     return b
 
 
@@ -189,6 +192,33 @@ def save_transaction(db,
               )
 
 
+def open_account_transactions_page(b, account):
+
+    account_id = account[0]
+    account_type = account[1]
+
+    if b.geturl() != logged_in_url:
+        print('Current url is %s, need to open accounts page at %s' %
+              (b.geturl(), logged_in_url))
+        b.open('https://ib.nab.com.au/nabib/acctInfo_acctBal.ctl')
+
+    print('Opening transaction page for account %s... ' % account_id)
+    URL_FORM_ACCOUNT_HISTORY = 'https://ib.nab.com.au/nabib/transactionHistoryGetSettings.ctl'
+    b.select_form(name='submitForm')
+    b.form.set_all_readonly(False)
+    b.form.action = URL_FORM_ACCOUNT_HISTORY
+    b.form['account'] = account_id
+    b.form['accountType'] = account_type
+    b.submit()
+
+    if not check_url(b, URL_FORM_ACCOUNT_HISTORY):
+        print('Cannot open page %s with details for account %s' % (
+              URL_FORM_ACCOUNT_HISTORY, account_id))
+        return
+
+    return b
+
+
 def export():
 
     db = init_db()
@@ -207,24 +237,8 @@ def export():
 
     for account in accounts:
 
-        account_id = account[0]
-        account_type = account[1]
-
-        if b.geturl() != logged_in_url:
-            print('Current url is %s, need to open accounts page at %s' %
-                  (b.geturl(), logged_in_url))
-            b.open('https://ib.nab.com.au/nabib/acctInfo_acctBal.ctl')
-
-        print('Opening transaction page for account ' + account_id)
-        URL_FORM_ACCOUNT_HISTORY = 'https://ib.nab.com.au/nabib/transactionHistoryGetSettings.ctl'
-        b.select_form(name='submitForm')
-        b.form.set_all_readonly(False)
-        b.form.action = URL_FORM_ACCOUNT_HISTORY
-        b.form['account'] = account_id
-        b.form['accountType'] = account_type
-        b.submit()
-
-        if not check_url(b, URL_FORM_ACCOUNT_HISTORY):
+        b = open_account_transactions_page(b, account)
+        if not b:
             return
 
         # This will render date filtering form
@@ -234,9 +248,12 @@ def export():
         if not check_url(b, form_url):
             return
 
+        account_id = account[0]
+
         if is_account_empty(db, account_id):
 
-            print('Account %(acc)s is empty, retrieving transactions from beginning of times' %
+            print('We don\'t seem to have any transactins for account %s, hmm...' % account_id)
+            print('Anyhow, let\'s retrieve all transactions from beginning of times for it!' %
                   {'acc': account_id})
 
             # It looks like NAB only lets you get transactions from last 560 days
@@ -257,8 +274,19 @@ def export():
             if not check_url(b, URL_SUBMIT_HISTORY_FORM):
                 return
 
-            write_step(account_id + '.html', response)
+            #write_step(account_id + '.html', response)
             #if not check_url(b, ''
+
+            # Check we actually got what we asked for
+            expr = 'Period:\\r\\n\\s*' + start_date.strftime('%d/%m/%y')
+
+            if not re.findall(expr, response):
+                print('It doesn\'t look like I was able to get transactions')
+                print('Cannot find string : %s in response' % expr)
+                return None
+
+            print('All good, transactions retrieved')
+
 
         else:
             print('Account %(acc)s has some transactions, so just get the new ones...' %
