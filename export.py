@@ -100,23 +100,43 @@ def login():
 Account = namedtuple('Account', ['acc_id', 'acc_type'])
 
 
-def get_account_ids(text):
+def get_accounts(text):
 
     pq = PyQuery(text)
-    account_links = pq.find('#accountBalances_nonprimary_subaccounts a.accountNickname')
-    if len(account_links) == 0:
+    account_divs = pq.find('.acctDetails')
+    if len(account_divs) == 0:
         print('\tNo accounts found.')
-        return
+        return None
 
     accounts = []
-    for link in account_links:
+    for div in account_divs:
 
+        # This is using chained .find because CSS select breaks on that HTML
+        name = div.find('a').find('span').text.strip()
+        if not name:
+            print('No Account name found.')
+            return None
+
+        details_div = div.find('div')
+        bsb = re.findall('BSB: ([\d-]*)', details_div.text_content())
+        acc_no = re.findall('Acct No: ([\d-]*)', details_div.text_content())
+
+        if not bsb or not acc_no:
+            print('Account number of BSB is missing for account \'%s\'' % name)
+            return None
+
+        link = div.find('a')
         params = re.findall("'(.*?)'", link.attrib['href'])
         if len(params) != 2:
             print('\tError: incorrect HREF for account: ', link.attrib['href'])
             return None
 
-        accounts.append(params)
+        accounts.append({
+            'name': name,
+            'bsb': bsb[0],
+            'acc_no': acc_no[0],
+            'params': params
+        })
 
     return accounts
 
@@ -127,31 +147,27 @@ def init_db():
     db.execute('''
         create table if not exists transactions
               (
-                account_id text,
+                bsb text,
+                acc_no text,
 
                 date text,
                 details text,
 
-                debit_amount_whole integer,
-                debit_amount_fraction integer,
+                debit_amount text,
+                credit_amount text,
 
-                credit_amount_whole integer,
-                credit_amount_fraction integer,
-
-                balance_whole integer,
-                balance_fraction integer,
-                balance_sign text
+                balance text
               )''')
     return db
 
 
-def is_account_empty(db, account_id):
+def is_account_empty(db, bsb, acc_no):
 
     cur = db.execute('''
-                     select count(account_id) from transactions
-                     where account_id = ?
+                     select count(bsb) from transactions
+                     where bsb = ? and acc_no = ?
                      ''',
-                     [account_id]
+                     [bsb, acc_no]
                     )
     row = cur.next()
 
@@ -159,37 +175,79 @@ def is_account_empty(db, account_id):
 
 
 def save_transaction(db,
-                     account_id,
+
+                     bsb,
+                     acc_no,
+
                      date,
                      details,
 
-                     debit_amount_whole,
-                     debit_amount_fraction,
+                     debit_amount,
+                     credit_amount,
 
-                     credit_amount_whole,
-                     credit_amount_fraction,
+                     balance
+                    ):
 
-                     balance_whole,
-                     balance_fraction,
-                     balance_sign):
-
-    db.execute('insert into transactions values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    db.execute('insert into transactions values (?, ?, ?, ?, ?, ?, ?)',
                (
-                account_id,
+                bsb,
+                acc_no,
+
                 date,
                 details,
 
-                debit_amount_whole,
-                debit_amount_fraction,
+                debit_amount,
+                credit_amount,
 
-                credit_amount_whole,
-                credit_amount_fraction,
-
-                balance_whole,
-                balance_fraction,
-                balance_sign
+                balance
                )
               )
+
+
+def save_transactions(db, bsb, acc_no, transactions):
+
+    for trans in transactions:
+        save_transaction(db,
+
+                         bsb,
+                         acc_no,
+
+                         trans['date'],
+                         trans['details'],
+
+                         trans['debit_amount'],
+                         trans['credit_amount'],
+                         trans['balance']
+                        )
+
+
+def extract_transactions(content):
+
+    q = PyQuery(content)
+    rows = q.find('#transactionHistoryTable tbody tr')
+    transactions = []
+
+    for row in rows:
+        tds = row.getchildren()
+
+        details_l1 = tds[1].text
+        details_l2 = tds[1].text_content()
+        if (details_l1 != details_l2):
+            details_l2 = details_l2[len(details_l1):]
+            details = '%s\n%s' % (details_l1, details_l2)
+        else:
+            details = details_l1
+
+        transactions.append({
+            'date': tds[0].text_content(),
+            'details': details,
+
+            'debit_amount': tds[2].text_content(),
+            'credit_amount': tds[3].text_content(),
+            'balance': tds[4].text_content()
+        })
+
+    return transactions
 
 
 def open_account_transactions_page(b, account):
@@ -203,6 +261,7 @@ def open_account_transactions_page(b, account):
         b.open('https://ib.nab.com.au/nabib/acctInfo_acctBal.ctl')
 
     print('Opening transaction page for account %s... ' % account_id)
+
     URL_FORM_ACCOUNT_HISTORY = 'https://ib.nab.com.au/nabib/transactionHistoryGetSettings.ctl'
     b.select_form(name='submitForm')
     b.form.set_all_readonly(False)
@@ -219,6 +278,42 @@ def open_account_transactions_page(b, account):
     return b
 
 
+def render_all_transactions(b):
+
+    # It looks like NAB only lets you get transactions from last 560 days
+    # (ancient back-end restriction, I suppose?)
+    # So let's calculate that date then, shall we?
+
+    # periodToDate seems to contain today's date, should be safe to use
+    b.select_form(name='transactionHistoryForm')
+    input_today = b.form['periodToDate'].split('/')
+    today = date(2000 + int(input_today[2]), int(input_today[1]), int(input_today[0]))
+    start_date = today - timedelta(days=560)
+    b.form['periodFromDate'] = start_date.strftime('%d/%m/%y')
+    URL_SUBMIT_HISTORY_FORM = 'https://ib.nab.com.au/nabib/transactionHistoryValidate.ctl'
+    b.form.action = URL_SUBMIT_HISTORY_FORM
+
+    print('Getting transactions from %s to %s' % (start_date, today))
+    b.submit()
+
+    response = b.response().read()
+    if not check_url(b, URL_SUBMIT_HISTORY_FORM):
+        return
+
+    # Check we actually got what we asked for
+    expr = 'Period:\\r\\n\\s*' + start_date.strftime('%d/%m/%y')
+
+    if not re.findall(expr, response):
+        print('It doesn\'t look like I was able to get transactions')
+        print('Cannot find string : %s in response' % expr)
+        return None
+
+    #write_step( + '.html', response)
+
+    print('All good, transactions retrieved')
+    return b
+
+
 def export():
 
     db = init_db()
@@ -229,15 +324,19 @@ def export():
 
     response = b.response().read()
     #response = read_step('logged-in.html')
+    write_step('logged-in.html', response)
 
     # Get all account ids and types
-    accounts = get_account_ids(response)
+    accounts = get_accounts(response)
     if not accounts:
         return
 
     for account in accounts:
 
-        b = open_account_transactions_page(b, account)
+        print('Processing account \'%s\' (BSB: %s Number: %s)' % (
+            account['name'], account['bsb'], account['acc_no']))
+
+        b = open_account_transactions_page(b, account['params'])
         if not b:
             return
 
@@ -248,52 +347,30 @@ def export():
         if not check_url(b, form_url):
             return
 
-        account_id = account[0]
+        if is_account_empty(db, account['bsb'], account['acc_no']):
 
-        if is_account_empty(db, account_id):
+            print('We don\'t seem to have any transactins for account %s, hmm...' % account['name'])
+            print('Anyhow, let\'s retrieve all transactions from beginning of times for it!')
 
-            print('We don\'t seem to have any transactins for account %s, hmm...' % account_id)
-            print('Anyhow, let\'s retrieve all transactions from beginning of times for it!' %
-                  {'acc': account_id})
-
-            # It looks like NAB only lets you get transactions from last 560 days
-            # (ancient back-end restriction, I suppose?)
-            # So let's calculate that date then, shall we?
-
-            # periodToDate seems to contain today's date, should be safe to use
-            b.select_form(name='transactionHistoryForm')
-            input_today = b.form['periodToDate'].split('/')
-            today = date(2000 + int(input_today[2]), int(input_today[1]), int(input_today[0]))
-            start_date = today - timedelta(days=560)
-            b.form['periodFromDate'] = start_date.strftime('%d/%m/%y')
-            URL_SUBMIT_HISTORY_FORM = 'https://ib.nab.com.au/nabib/transactionHistoryValidate.ctl'
-            b.form.action = URL_SUBMIT_HISTORY_FORM
-            b.submit()
-
-            response = b.response().read()
-            if not check_url(b, URL_SUBMIT_HISTORY_FORM):
-                return
-
-            #write_step(account_id + '.html', response)
-            #if not check_url(b, ''
-
-            # Check we actually got what we asked for
-            expr = 'Period:\\r\\n\\s*' + start_date.strftime('%d/%m/%y')
-
-            if not re.findall(expr, response):
-                print('It doesn\'t look like I was able to get transactions')
-                print('Cannot find string : %s in response' % expr)
+            b = render_all_transactions(b)
+            if not b:
                 return None
 
-            print('All good, transactions retrieved')
+            # Extract and store all transactions into db
+            while True:
 
+                cont = b.response().read()
+                trans = extract_transactions(cont)
+                print trans
+                save_transactions(db, account['bsb'], account['acc_no'], trans)
+                break
 
         else:
             print('Account %(acc)s has some transactions, so just get the new ones...' %
                   {'acc': account_id})
 
         #response = b.response().read()
-        #write_step(account[0] + '.html', response)
+        #write_step(account['params'][0] + '.html', response)
 
 
 if __name__ == "__main__":
