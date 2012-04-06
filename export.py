@@ -202,6 +202,7 @@ def save_transaction(db,
                 balance
                )
               )
+    db.commit()
 
 
 def save_transactions(db, bsb, acc_no, transactions):
