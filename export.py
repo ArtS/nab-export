@@ -333,10 +333,35 @@ def get_all_transactions(b, account):
     while True:
 
         cont = b.response().read()
+        soup = BeautifulSoup(cont)
+
+        input = soup.select('input[name="pageNo"]')
+        if not input:
+            currPage = 1
+        else:
+            currPage = int(input[0].attrs['value'])
+        print('\tGetting transactions from page %s' % currPage)
+
         trans = extract_transactions(cont)
         save_transactions(db, account['bsb'], account['acc_no'], trans)
+        print('\tSaved %s transactions' % len(trans))
 
-        break
+
+        # Links to all pages with history are kind of fucked-up
+        # there's no classes on them to identify, hence the need to find
+        # closest unique element and go via siblings
+        currPage += 1
+        transExp = soup.select('#transactionExport')[0]
+
+        # :contains does not seem to work, using .find()
+        pageLink = list(transExp.nextSiblingGenerator())[1].find('a', text=str(currPage))
+        if not pageLink:
+            print('\tNo page #%s is available, finished processing' % currPage)
+            break
+
+        print('\tOpening page #%s...' % currPage)
+        b.open('https://ib.nab.com.au' + pageLink.attrs['href'])
+        print('\tOK')
 
     return b
 
@@ -385,7 +410,7 @@ def export():
 
         else:
             print('Account %(acc)s has some transactions, so just get the new ones...' %
-                  {'acc': account_id})
+                  {'acc': account['acc_no']})
 
         #response = b.response().read()
         #write_step(account['params'][0] + '.html', response)
