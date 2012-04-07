@@ -7,7 +7,8 @@ from datetime import date, timedelta
 
 from mechanize import Browser, ControlNotFoundError
 from mechanize import _http
-from pyquery import PyQuery
+from bs4 import BeautifulSoup
+from bs4.element import NavigableString
 
 from lib import make_password, get_credentials, write_step, read_step
 
@@ -15,6 +16,8 @@ from lib import make_password, get_credentials, write_step, read_step
 Transaction = namedtuple('Transaction', ['date', 'name', 'desc', 'amount'])
 
 logged_in_url = 'https://ib.nab.com.au/nabib/acctInfo_acctBal.ctl'
+
+db = None
 
 def check_url(b, expected_url):
 
@@ -93,7 +96,7 @@ def login():
         print('Error logging in.')
         return None
 
-    print('Logged in!')
+    print('OK')
     return b
 
 
@@ -102,8 +105,8 @@ Account = namedtuple('Account', ['acc_id', 'acc_type'])
 
 def get_accounts(text):
 
-    pq = PyQuery(text)
-    account_divs = pq.find('.acctDetails')
+    soup = BeautifulSoup(text)
+    account_divs = soup.select('.acctDetails')
     if len(account_divs) == 0:
         print('\tNo accounts found.')
         return None
@@ -111,22 +114,21 @@ def get_accounts(text):
     accounts = []
     for div in account_divs:
 
-        # This is using chained .find because CSS select breaks on that HTML
-        name = div.find('a').find('span').text.strip()
+        name = div.select('a span')[0].text.strip()
         if not name:
             print('No Account name found.')
             return None
 
-        details_div = div.find('div')
-        bsb = re.findall('BSB: ([\d-]*)', details_div.text_content())
-        acc_no = re.findall('Acct No: ([\d-]*)', details_div.text_content())
+        details_div = div.select('.accountNumber')[0]
+        bsb = re.findall('BSB: ([\d-]*)', details_div.text)
+        acc_no = re.findall('Acct No: ([\d-]*)', details_div.text)
 
         if not bsb or not acc_no:
             print('Account number of BSB is missing for account \'%s\'' % name)
             return None
 
-        link = div.find('a')
-        params = re.findall("'(.*?)'", link.attrib['href'])
+        link = div.select('a[href^="javascript:viewTransaction(\'"]')[0]
+        params = re.findall("'(.*?)'", link.attrs['href'])
         if len(params) != 2:
             print('\tError: incorrect HREF for account: ', link.attrib['href'])
             return None
@@ -224,28 +226,26 @@ def save_transactions(db, bsb, acc_no, transactions):
 
 def extract_transactions(content):
 
-    q = PyQuery(content)
-    rows = q.find('#transactionHistoryTable tbody tr')
+    soup = BeautifulSoup(content)
+    rows = soup.select('#transactionHistoryTable tbody tr')
     transactions = []
 
     for row in rows:
-        tds = row.getchildren()
 
-        details_l1 = tds[1].text
-        details_l2 = tds[1].text_content()
-        if (details_l1 != details_l2):
-            details_l2 = details_l2[len(details_l1):]
-            details = '%s\n%s' % (details_l1, details_l2)
-        else:
-            details = details_l1
+        tds = row.select('td')
+        detail_lines = list(tds[1].children)
+        details = []
+
+        for detail_line in detail_lines:
+            if type(detail_line) == NavigableString:
+                details.append(detail_line)
 
         transactions.append({
-            'date': tds[0].text_content(),
-            'details': details,
-
-            'debit_amount': tds[2].text_content(),
-            'credit_amount': tds[3].text_content(),
-            'balance': tds[4].text_content()
+            'date': tds[0].text,
+            'details': '\n'.join(details),
+            'debit_amount': tds[2].text,
+            'credit_amount': tds[3].text,
+            'balance': tds[4].text
         })
 
     return transactions
@@ -257,11 +257,11 @@ def open_account_transactions_page(b, account):
     account_type = account[1]
 
     if b.geturl() != logged_in_url:
-        print('Current url is %s, need to open accounts page at %s' %
+        print('\tCurrent url is %s, need to open accounts page at %s' %
               (b.geturl(), logged_in_url))
         b.open('https://ib.nab.com.au/nabib/acctInfo_acctBal.ctl')
 
-    print('Opening transaction page for account %s... ' % account_id)
+    print('\tOpening transaction page for account %s... ' % account_id)
 
     URL_FORM_ACCOUNT_HISTORY = 'https://ib.nab.com.au/nabib/transactionHistoryGetSettings.ctl'
     b.select_form(name='submitForm')
@@ -272,7 +272,7 @@ def open_account_transactions_page(b, account):
     b.submit()
 
     if not check_url(b, URL_FORM_ACCOUNT_HISTORY):
-        print('Cannot open page %s with details for account %s' % (
+        print('\tCannot open page %s with details for account %s' % (
               URL_FORM_ACCOUNT_HISTORY, account_id))
         return
 
@@ -284,17 +284,22 @@ def render_all_transactions(b):
     # It looks like NAB only lets you get transactions from last 560 days
     # (ancient back-end restriction, I suppose?)
     # So let's calculate that date then, shall we?
+    delta_days = 560
 
     # periodToDate seems to contain today's date, should be safe to use
     b.select_form(name='transactionHistoryForm')
     input_today = b.form['periodToDate'].split('/')
     today = date(2000 + int(input_today[2]), int(input_today[1]), int(input_today[0]))
-    start_date = today - timedelta(days=560)
+    start_date = today - timedelta(days=delta_days)
+
     b.form['periodFromDate'] = start_date.strftime('%d/%m/%y')
+
     URL_SUBMIT_HISTORY_FORM = 'https://ib.nab.com.au/nabib/transactionHistoryValidate.ctl'
     b.form.action = URL_SUBMIT_HISTORY_FORM
 
-    print('Getting transactions from %s to %s' % (start_date, today))
+    print('\tGetting transactions from %s to %s (last %s days)' % (start_date,
+                                                                   today,
+                                                                   delta_days))
     b.submit()
 
     response = b.response().read()
@@ -311,13 +316,37 @@ def render_all_transactions(b):
 
     #write_step( + '.html', response)
 
-    print('All good, transactions retrieved')
+    print('\tAll good, transactions retrieved')
+    return b
+
+
+def get_all_transactions(b, account):
+
+    print('\tWe don\'t seem to have any transactins for account \'%s\', hmm...' % account['name'])
+    print('\tAnyhow, let\'s retrieve all transactions from beginning of times for it!')
+
+    b = render_all_transactions(b)
+    if not b:
+        return None
+
+    # Extract and store all transactions into db
+    while True:
+
+        cont = b.response().read()
+        trans = extract_transactions(cont)
+        save_transactions(db, account['bsb'], account['acc_no'], trans)
+
+        break
+
     return b
 
 
 def export():
 
+    global db
     db = init_db()
+    if not db:
+        return
 
     b = login()
     if not b:
@@ -334,7 +363,7 @@ def export():
 
     for account in accounts:
 
-        print('Processing account \'%s\' (BSB: %s Number: %s)' % (
+        print('\nProcessing account \'%s\' (BSB: %s Number: %s)' % (
             account['name'], account['bsb'], account['acc_no']))
 
         b = open_account_transactions_page(b, account['params'])
@@ -350,21 +379,9 @@ def export():
 
         if is_account_empty(db, account['bsb'], account['acc_no']):
 
-            print('We don\'t seem to have any transactins for account %s, hmm...' % account['name'])
-            print('Anyhow, let\'s retrieve all transactions from beginning of times for it!')
-
-            b = render_all_transactions(b)
+            b = get_all_transactions(b, account)
             if not b:
-                return None
-
-            # Extract and store all transactions into db
-            while True:
-
-                cont = b.response().read()
-                trans = extract_transactions(cont)
-                print trans
-                save_transactions(db, account['bsb'], account['acc_no'], trans)
-                break
+                return
 
         else:
             print('Account %(acc)s has some transactions, so just get the new ones...' %
