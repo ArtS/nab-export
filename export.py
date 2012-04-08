@@ -167,25 +167,25 @@ def init_db():
     return db
 
 
-def is_account_empty(db, bsb, acc_no):
+def get_last_transaction_date(bsb, acc_no):
 
     cur = db.execute('''
-                     select count(bsb) from transactions
+                     select date_sec from transactions
                      where bsb = ? and acc_no = ?
+                     order by date_sec desc
+                     limit 1
                      ''',
                      [bsb, acc_no]
                     )
-    row = cur.next()
 
-    return row[0] == 0
+    row = cur.fetchall()
+    if not row:
+        return None
 
-
-def get_last_transaction_date(bsb, acc_no):
-
-    pass
+    return datetime.fromtimestamp(row[0][0])
 
 
-def save_transaction(db,
+def save_transaction(
 
                      bsb,
                      acc_no,
@@ -222,12 +222,10 @@ def save_transaction(db,
     db.commit()
 
 
-def save_transactions(db, bsb, acc_no, transactions):
+def save_transactions(bsb, acc_no, transactions):
 
     for trans in transactions:
-        save_transaction(db,
-
-                         bsb,
+        save_transaction(bsb,
                          acc_no,
 
                          trans['date'],
@@ -294,27 +292,15 @@ def open_account_transactions_page(b, account):
     return b
 
 
-def render_all_transactions(b):
+def query_server_transactions(b, start_date):
 
-    # It looks like NAB only lets you get transactions from last 560 days
-    # (ancient back-end restriction, I suppose?)
-    # So let's calculate that date then, shall we?
-    delta_days = 560
-
-    # periodToDate seems to contain today's date, should be safe to use
     b.select_form(name='transactionHistoryForm')
-    input_today = b.form['periodToDate'].split('/')
-    today = date(2000 + int(input_today[2]), int(input_today[1]), int(input_today[0]))
-    start_date = today - timedelta(days=delta_days)
-
     b.form['periodFromDate'] = start_date.strftime('%d/%m/%y')
 
     URL_SUBMIT_HISTORY_FORM = 'https://ib.nab.com.au/nabib/transactionHistoryValidate.ctl'
     b.form.action = URL_SUBMIT_HISTORY_FORM
 
-    print('\tGetting transactions from %s to %s (last %s days)' % (start_date,
-                                                                   today,
-                                                                   delta_days))
+    print('\tGetting transactions up to %s' % start_date)
     b.submit()
 
     response = b.response().read()
@@ -335,12 +321,9 @@ def render_all_transactions(b):
     return b
 
 
-def get_all_transactions(b, account):
+def get_and_store_transactions(b, account, start_date):
 
-    print('\tWe don\'t seem to have any transactins for account \'%s\', hmm...' % account['name'])
-    print('\tAnyhow, let\'s retrieve all transactions from beginning of times for it!')
-
-    b = render_all_transactions(b)
+    b = query_server_transactions(b, start_date)
     if not b:
         return None
 
@@ -358,9 +341,8 @@ def get_all_transactions(b, account):
         print('\tGetting transactions from page %s' % currPage)
 
         trans = extract_transactions(cont)
-        save_transactions(db, account['bsb'], account['acc_no'], trans)
+        save_transactions(account['bsb'], account['acc_no'], trans)
         print('\tSaved %s transactions' % len(trans))
-
 
         # Links to all pages with history are kind of fucked-up
         # there's no classes on them to identify, hence the need to find
@@ -381,6 +363,15 @@ def get_all_transactions(b, account):
     return b
 
 
+def get_servers_today_date(b):
+
+    # periodToDate seems to contain today's date, should be safe to use
+    b.select_form(name='transactionHistoryForm')
+    input_today = b.form['periodToDate'].split('/')
+
+    return date(2000 + int(input_today[2]), int(input_today[1]), int(input_today[0]))
+
+
 def export():
 
     global db
@@ -393,10 +384,8 @@ def export():
         return
 
     response = b.response().read()
-    #response = read_step('logged-in.html')
     write_step('logged-in.html', response)
 
-    # Get all account ids and types
     accounts = get_accounts(response)
     if not accounts:
         return
@@ -417,9 +406,18 @@ def export():
         if not check_url(b, form_url):
             return
 
-        if is_account_empty(db, account['bsb'], account['acc_no']):
+        last_date = get_last_transaction_date(account['bsb'], account['acc_no'])
+        if not last_date:
 
-            b = get_all_transactions(b, account)
+            print('\tWe don\'t seem to have any transactins for account \'%s\' in database.' % account['name'])
+            print('\tThat\'s OK though! Let\'s retrieve all of them since beginning of times.')
+
+            # It looks like NAB only lets you get transactions from last 560 days
+            # (ancient back-end restriction, I suppose?)
+            today = get_servers_today_date(b)
+            start_date = today - timedelta(days=560)
+
+            b = get_and_store_transactions(b, account, start_date)
             if not b:
                 return
 
@@ -427,7 +425,9 @@ def export():
             print('Account %(acc)s has some transactions, so just get the new ones...' %
                   {'acc': account['acc_no']})
 
-            # Need to figure out last date for transaction
+            b = get_and_store_transactions(b, account, last_date)
+            if not b:
+                return
 
         #response = b.response().read()
         #write_step(account['params'][0] + '.html', response)
