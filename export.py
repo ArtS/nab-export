@@ -3,7 +3,8 @@
 import re
 import sqlite3
 from collections import namedtuple
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
+import time
 
 from mechanize import Browser, ControlNotFoundError
 from mechanize import _http
@@ -149,10 +150,13 @@ def init_db():
     db.execute('''
         create table if not exists transactions
               (
+                id integer primary key autoincrement,
+
                 bsb text,
                 acc_no text,
 
-                date text,
+                date_sec integer,
+                date_txt text,
                 details text,
 
                 debit_amount text,
@@ -176,12 +180,17 @@ def is_account_empty(db, bsb, acc_no):
     return row[0] == 0
 
 
+def get_last_transaction_date(bsb, acc_no):
+
+    pass
+
+
 def save_transaction(db,
 
                      bsb,
                      acc_no,
 
-                     date,
+                     tran_date_txt,
                      details,
 
                      debit_amount,
@@ -190,12 +199,18 @@ def save_transaction(db,
                      balance
                     ):
 
-    db.execute('insert into transactions values (?, ?, ?, ?, ?, ?, ?)',
+    # Need to convert tran_date into number of seconds and store those
+    tran_date = datetime.strptime(tran_date_txt, '%d %b %y')
+    seconds = int(time.mktime(tran_date.utctimetuple()))
+
+
+    db.execute('insert into transactions values (null, ?, ?, ?, ?, ?, ?, ?, ?)',
                (
                 bsb,
                 acc_no,
 
-                date,
+                seconds,
+                tran_date_txt,
                 details,
 
                 debit_amount,
@@ -411,6 +426,8 @@ def export():
         else:
             print('Account %(acc)s has some transactions, so just get the new ones...' %
                   {'acc': account['acc_no']})
+
+            # Need to figure out last date for transaction
 
         #response = b.response().read()
         #write_step(account['params'][0] + '.html', response)
