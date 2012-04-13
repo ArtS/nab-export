@@ -32,6 +32,12 @@ class TestQIF(unittest.TestCase):
         self.assertFalse(not_found)
 
 
+    def test_get_available_name(self):
+
+        name = qif.get_available_name('lib/db.py')
+        self.assertEqual(name, 'lib/db.py.1')
+
+
 
 if __name__ == '__main__':
     unittest.main()
