@@ -1,5 +1,9 @@
 
 
+from datetime import datetime
+from getpass import getpass
+
+
 def write_step(name, content):
 
     with open(name, 'w') as f:
@@ -28,9 +32,13 @@ def get_credentials():
             return lines
 
     except Exception as e:
-        print 'Error opening credentials file.'
-        print e
-        return None
+        lines = []
+        print('Could not find .credentials file. Please enter username and password')
+        print('Username:')
+        lines.append(raw_input())
+        lines.append(getpass())
+
+        return lines
 
 
 """See http://en.wikipedia.org/wiki/Quicken_Interchange_Format for more info."""
@@ -86,3 +94,8 @@ def make_password(password, key, alphabet):
 #hashedPwd = make_password('qqqqqqqq', 'jTECuQc6', '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
 #expectedPwd = '7xMOWAek'
 #print hashedPwd + ' == ' + expectedPwd
+
+
+def parse_transaction_date(text):
+
+    return datetime.strptime(text, '%d %b %y')

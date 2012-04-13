@@ -3,7 +3,51 @@
 
 from datetime import timedelta
 
-from lib import db, browser
+from lib import db, browser, qif
+
+
+def get_last_transaction_date(b, account):
+
+    today = browser.get_servers_today_date(b)
+
+    # It looks like NAB only lets you get transactions for last 560 days
+    # (ancient back-end restriction, I suppose?)
+    MAX_HISTORY_DAYS = 560
+    last_date = db.get_last_transaction_date(account['bsb'], account['acc_no'])
+
+    if not last_date:
+
+        print('\tWe don\'t seem to have any transactins for account \'%s\' in database.' % account['name'])
+        print('\tThat\'s OK though! Let\'s retrieve transactions for last %s days' % MAX_HISTORY_DAYS)
+
+        last_date = today - timedelta(days=MAX_HISTORY_DAYS)
+
+    else:
+
+        print('Account %(acc)s has some transactions, so just get the new ones...' %
+              {'acc': account['acc_no']})
+
+        if (today - last_date).days > MAX_HISTORY_DAYS:
+            print('Looks like the oldest transaction in the DB is older than %s days' % MAX_HISTORY_DAYS)
+            print('Retrieving transactions for only last %s days' % MAX_HISTORY_DAYS)
+            last_date = today - timedelta(days=MAX_HISTORY_DAYS)
+
+    return last_date
+
+
+def remove_panding_transactions(trans):
+
+    res = []
+    for t in trans:
+
+        if t.desc == 'EFTPOS DEBIT PURCHASE-FLEXIPAY':
+            pass
+
+        res.append(t)
+
+    return res
+
+
 
 
 def export():
@@ -31,26 +75,17 @@ def export():
         if not b:
             return
 
-        last_date = db.get_last_transaction_date(account['bsb'], account['acc_no'])
-        if not last_date:
-
-            print('\tWe don\'t seem to have any transactins for account \'%s\' in database.' % account['name'])
-            print('\tThat\'s OK though! Let\'s retrieve all of them since the beginning of times.')
-
-            # It looks like NAB only lets you get transactions for last 560 days
-            # (ancient back-end restriction, I suppose?)
-            today = browser.get_servers_today_date(b)
-            last_date = today - timedelta(days=560)
-
-        else:
-
-            print('Account %(acc)s has some transactions, so just get the new ones...' %
-                  {'acc': account['acc_no']})
-
+        last_date = get_last_transaction_date(b, account)
         trans = browser.get_all_transactions(b, account, last_date)
+
         if not trans:
             return
+
+        trans = remove_panding_transactions(trans)
+
         db.save_transactions(account['bsb'], account['acc_no'], trans)
+
+        qif.save_qif_file(account['bsb'], account['acc_no'], trans)
 
         print('\tSaved %s transactions' % len(trans))
 

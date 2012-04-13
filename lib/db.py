@@ -3,6 +3,8 @@ import sqlite3
 from datetime import datetime
 import time
 
+from tools import parse_transaction_date
+
 
 db = None
 
@@ -66,7 +68,7 @@ def save_transaction(
 
     global db
     # Need to convert tran_date into number of seconds and store those
-    tran_date = datetime.strptime(tran_date_txt, '%d %b %y')
+    tran_date = parse_transaction_date(tran_date_txt)
     seconds = int(time.mktime(tran_date.utctimetuple()))
 
 
