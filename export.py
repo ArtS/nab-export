@@ -24,7 +24,7 @@ def get_last_transaction_date(b, account):
 
     else:
 
-        print('Account %(acc)s has some transactions, so just get the new ones...' %
+        print('\tAccount %(acc)s has some transactions, so just get the new ones...' %
               {'acc': account['acc_no']})
 
         if (today - last_date).days > MAX_HISTORY_DAYS:
@@ -35,12 +35,13 @@ def get_last_transaction_date(b, account):
     return last_date
 
 
-def remove_panding_transactions(trans):
+def remove_pending_transactions(trans):
 
     res = []
     for t in trans:
 
-        if t.desc == 'EFTPOS DEBIT PURCHASE-FLEXIPAY':
+        if t['details'] == 'EFTPOS DEBIT PURCHASE-FLEXIPAY':
+            print('\tSkipping transaction %s' % t)
             pass
 
         res.append(t)
@@ -48,6 +49,14 @@ def remove_panding_transactions(trans):
     return res
 
 
+def exclude_existing_in_db_trans(bsb, acc_n, trans):
+
+    res = []
+    for t in trans:
+        if not db.is_transaction_in_db(bsb, acc_n, t):
+            res.append(t)
+
+    return res
 
 
 def export():
@@ -76,16 +85,25 @@ def export():
             return
 
         last_date = get_last_transaction_date(b, account)
+
         trans = browser.get_all_transactions(b, account, last_date)
+        trans = remove_pending_transactions(trans)
+        trans = exclude_existing_in_db_trans(account['bsb'],
+                                             account['acc_no'],
+                                             trans)
 
         if not trans:
             return
 
-        trans = remove_panding_transactions(trans)
+        db.save_transactions(account['name'],
+                             account['bsb'],
+                             account['acc_no'],
+                             trans)
 
-        db.save_transactions(account['bsb'], account['acc_no'], trans)
-
-        qif.save_qif_file(account['bsb'], account['acc_no'], trans)
+        qif.save_qif_file(account['name'],
+                          account['bsb'],
+                          account['acc_no'],
+                          trans)
 
         print('\tSaved %s transactions' % len(trans))
 

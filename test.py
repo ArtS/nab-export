@@ -19,16 +19,16 @@ class TestQIF(unittest.TestCase):
 
     def test_is_file_present(self):
 
-        found = qif.is_file_present('lib', 'db.py')
+        found = qif.is_file_present('lib/db.py')
         self.assertTrue(found)
 
-        found = qif.is_file_present('', 'test.py')
+        found = qif.is_file_present('test.py')
         self.assertTrue(found)
 
-        found = qif.is_file_present('.', 'test.py')
+        found = qif.is_file_present('./test.py')
         self.assertTrue(found)
 
-        not_found = qif.is_file_present('aaa/bbb/ccc', 'test.py')
+        not_found = qif.is_file_present('aaa/bbb/ccc/test.py')
         self.assertFalse(not_found)
 
 

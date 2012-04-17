@@ -3,8 +3,6 @@ import sqlite3
 from datetime import datetime
 import time
 
-from tools import parse_transaction_date
-
 
 db = None
 
@@ -18,6 +16,7 @@ def init_db():
               (
                 id integer primary key autoincrement,
 
+                name text,
                 bsb text,
                 acc_no text,
 
@@ -54,10 +53,12 @@ def get_last_transaction_date(bsb, acc_no):
 
 def save_transaction(
 
+                     name,
                      bsb,
                      acc_no,
 
                      tran_date_txt,
+                     tran_date,
                      details,
 
                      debit_amount,
@@ -67,13 +68,11 @@ def save_transaction(
                     ):
 
     global db
-    # Need to convert tran_date into number of seconds and store those
-    tran_date = parse_transaction_date(tran_date_txt)
+
     seconds = int(time.mktime(tran_date.utctimetuple()))
-
-
-    db.execute('insert into transactions values (null, ?, ?, ?, ?, ?, ?, ?, ?)',
+    db.execute('insert into transactions values (null, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                (
+                name,
                 bsb,
                 acc_no,
 
@@ -90,18 +89,44 @@ def save_transaction(
     db.commit()
 
 
-def save_transactions(bsb, acc_no, transactions):
+def save_transactions(name, bsb, acc_no, transactions):
 
     global db
 
     for trans in transactions:
-        save_transaction(bsb,
+        save_transaction(name,
+                         bsb,
                          acc_no,
 
                          trans['date'],
+                         trans['date_obj'],
                          trans['details'],
 
                          trans['debit_amount'],
                          trans['credit_amount'],
                          trans['balance']
                         )
+
+
+def is_transaction_in_db(bsb, acc_no, tran):
+
+    global db
+    cur = db.execute('''
+                     select * from transactions where
+                        bsb = ?
+                        and acc_no = ?
+                        and date_txt = ?
+                        and details = ?
+                        and debit_amount = ?
+                        and credit_amount = ?
+
+                     ''',
+                     (bsb, acc_no, tran['date'], tran['details'],
+                     tran['debit_amount'],
+                     tran['credit_amount']))
+
+    row = cur.fetchall()
+    if not row:
+        return False
+
+    return True

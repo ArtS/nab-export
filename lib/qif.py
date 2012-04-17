@@ -1,14 +1,11 @@
 
 
+import re
 import os
-
-from lib.tools import parse_transaction_date
 
 
 def get_qif_name(start_date, end_date):
 
-    start_date = parse_transaction_date(start_date)
-    end_date = parse_transaction_date(end_date)
     date_format = '%Y.%m.%d'
 
     return  '%s - %s.qif' % (
@@ -42,10 +39,33 @@ def get_available_name(full_path):
             return full_path_n
 
 
-def save_qif_file(bsb, acc_n, trans):
+def write_qif(acc_name, trans, file_name):
+    """See http://en.wikipedia.org/wiki/Quicken_Interchange_Format for more info."""
 
-    dir_name = '%s-%s' % (bsb.replace('-', ''), acc_n.replace('-', '')
-    file_name = get_qif_name(trans[-1]['date'], trans[0]['date'])
+    with open(file_name, 'w') as f:
+
+        # Write header
+        f.write('!Account\n')
+        f.write('N' + acc_name +'\n')
+        f.write('^\n')
+
+        for t in trans:
+            f.write('C\n') # status - uncleared
+            f.write('D%s\n' % t['date_obj'].strftime('%d/%m/%Y')) # date
+
+            amount = t['debit_amount']
+            sign = '' if amount.endswith(' DR') else '+'
+            amount = re.sub('\s(CR|DR)$', '', amount)
+            f.write('T%s%s\n' % (sign, amount)) # amount
+
+            f.write('M%s\n' % t['details']) # memo
+            f.write('^\n') # end of record
+
+
+def save_qif_file(acc_name, bsb, acc_n, trans):
+
+    dir_name = '%s-%s' % (bsb.replace('-', ''), acc_n.replace('-', ''))
+    file_name = get_qif_name(trans[-1]['date_obj'], trans[0]['date_obj'])
     full_path = os.path.join(dir_name, file_name)
 
     # Create folder if not present
@@ -55,6 +75,8 @@ def save_qif_file(bsb, acc_n, trans):
     # It's possible that file with such name already exists.
     # in this case we'll be adding a postfix of N to the file
     # name.
-    available_name = get_available_name(full_path)
+    available_file_name = get_available_name(full_path)
+
+    write_qif(acc_name, trans, available_file_name)
 
     return

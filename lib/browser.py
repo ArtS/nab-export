@@ -1,6 +1,6 @@
 
 import re
-from datetime import date
+from datetime import datetime
 
 from mechanize import Browser, ControlNotFoundError
 from mechanize import _http
@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from bs4.element import NavigableString
 
 from lib.tools import make_password, get_credentials, write_step, read_step
+from lib.tools import parse_transaction_date
 
 
 logged_in_url = 'https://ib.nab.com.au/nabib/acctInfo_acctBal.ctl'
@@ -152,7 +153,8 @@ def extract_transactions(content):
 
         transactions.append({
             'date': tds[0].text,
-            'details': '\n'.join(details),
+            'date_obj': parse_transaction_date(tds[0].text),
+            'details': ' '.join(details),
             'debit_amount': tds[2].text,
             'credit_amount': tds[3].text,
             'balance': tds[4].text
@@ -204,7 +206,7 @@ def get_servers_today_date(b):
     b.select_form(name='transactionHistoryForm')
     input_today = b.form['periodToDate'].split('/')
 
-    return date(2000 + int(input_today[2]), int(input_today[1]), int(input_today[0]))
+    return datetime(2000 + int(input_today[2]), int(input_today[1]), int(input_today[0]))
 
 
 def query_server_transactions(b, start_date):
