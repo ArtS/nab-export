@@ -151,10 +151,16 @@ def extract_transactions(content):
             if type(detail_line) == NavigableString:
                 details.append(detail_line)
 
+        # Here's the assumption here: if there are two lines in the transaction
+        # details cell, first line is payee and second one is memo
+        payee = details[0] if len(details) > 0 else ''
+        memo = details[1] if len(details) > 1 else ''
+
         transactions.append({
             'date': tds[0].text,
             'date_obj': parse_transaction_date(tds[0].text),
-            'details': ' '.join(details),
+            'payee': payee,
+            'memo': memo,
             'debit_amount': tds[2].text,
             'credit_amount': tds[3].text,
             'balance': tds[4].text

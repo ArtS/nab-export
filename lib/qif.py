@@ -45,20 +45,27 @@ def write_qif(acc_name, trans, file_name):
     with open(file_name, 'w') as f:
 
         # Write header
-        f.write('!Account\n')
-        f.write('N' + acc_name +'\n')
-        f.write('^\n')
+        f.write('!Type:Bank\n')
+        #f.write('N' + acc_name +'\n')
+        #f.write('^\n')
 
         for t in trans:
             f.write('C\n') # status - uncleared
-            f.write('D%s\n' % t['date_obj'].strftime('%d/%m/%Y')) # date
+            f.write('D%s\n' % t['date_obj'].strftime('%d/%m/%y')) # date
 
-            amount = t['debit_amount']
-            sign = '' if amount.endswith(' DR') else '+'
+            if t['debit_amount']:
+                amount = t['debit_amount']
+                sign = '-'
+            else:
+                amount = t['credit_amount']
+                sign = '+'
+
             amount = re.sub('\s(CR|DR)$', '', amount)
             f.write('T%s%s\n' % (sign, amount)) # amount
 
-            f.write('M%s\n' % t['details']) # memo
+            f.write('P%s\n' % t['payee']) # payee
+            f.write('M%s\n' % t['memo']) # memo
+
             f.write('^\n') # end of record
 
 

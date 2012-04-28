@@ -22,7 +22,9 @@ def init_db():
 
                 date_sec integer,
                 date_txt text,
-                details text,
+
+                payee text,
+                memo text,
 
                 debit_amount text,
                 credit_amount text,
@@ -59,7 +61,9 @@ def save_transaction(
 
                      tran_date_txt,
                      tran_date,
-                     details,
+
+                     payee,
+                     memo,
 
                      debit_amount,
                      credit_amount,
@@ -70,7 +74,7 @@ def save_transaction(
     global db
 
     seconds = int(time.mktime(tran_date.utctimetuple()))
-    db.execute('insert into transactions values (null, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    db.execute('insert into transactions values (null, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                (
                 name,
                 bsb,
@@ -78,7 +82,9 @@ def save_transaction(
 
                 seconds,
                 tran_date_txt,
-                details,
+
+                payee,
+                memo,
 
                 debit_amount,
                 credit_amount,
@@ -100,7 +106,9 @@ def save_transactions(name, bsb, acc_no, transactions):
 
                          trans['date'],
                          trans['date_obj'],
-                         trans['details'],
+
+                         trans['payee'],
+                         trans['memo'],
 
                          trans['debit_amount'],
                          trans['credit_amount'],
@@ -116,14 +124,17 @@ def is_transaction_in_db(bsb, acc_no, tran):
                         bsb = ?
                         and acc_no = ?
                         and date_txt = ?
-                        and details = ?
+                        and payee = ?
+                        and memo = ?
                         and debit_amount = ?
                         and credit_amount = ?
 
                      ''',
-                     (bsb, acc_no, tran['date'], tran['details'],
-                     tran['debit_amount'],
-                     tran['credit_amount']))
+                     (bsb, acc_no,
+                      tran['date'],
+                      tran['payee'], tran['memo'],
+                      tran['debit_amount'],
+                      tran['credit_amount']))
 
     row = cur.fetchall()
     if not row:

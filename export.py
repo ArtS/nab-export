@@ -40,11 +40,10 @@ def remove_pending_transactions(trans):
     res = []
     for t in trans:
 
-        if t['details'] == 'EFTPOS DEBIT PURCHASE-FLEXIPAY':
+        if t['payee'] == 'EFTPOS DEBIT PURCHASE-FLEXIPAY':
             print('\tSkipping transaction %s' % t)
-            pass
-
-        res.append(t)
+        else:
+            res.append(t)
 
     return res
 
