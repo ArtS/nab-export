@@ -40,7 +40,8 @@ def remove_pending_transactions(trans):
     res = []
     for t in trans:
 
-        if t['payee'] == 'EFTPOS DEBIT PURCHASE-FLEXIPAY':
+        if t['payee'] == 'EFTPOS DEBIT PURCHASE-FLEXIPAY' or\
+           t['memo'] == 'MISCELLANEOUS DEBIT DEBIT':
             print('\tSkipping transaction %s' % t)
         else:
             res.append(t)
@@ -92,7 +93,8 @@ def export():
                                              trans)
 
         if not trans:
-            return
+            print "\n\tNo valid transactions retrieved for the account"
+            continue
 
         db.save_transactions(account['name'],
                              account['bsb'],
