@@ -1,3 +1,4 @@
 transactions.db
 .credentials
 *.pyc
+.DS_Store
