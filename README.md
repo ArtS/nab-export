@@ -26,10 +26,12 @@ Simply start *export.py* from command line. It will ask you for username and pas
 
 After it is done, you'll see folders like that
 
+
 ```lrwxr-xr-x   1 art  staff      63 12 May 18:06 083081-16xxxxxxx
 lrwxr-xr-x   1 art  staff      63 12 May 18:07 083081-17xxxxxxx
 lrwxr-xr-x   1 art  staff      63 12 May 18:08 083081-17xxxxxxx
 ```
+
 
 each of those will contain your QIF files for a given account.
 
