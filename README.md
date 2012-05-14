@@ -2,7 +2,7 @@
 
 ### Intro #
 
-I hated having to login to NAB's clunky Internet banning and fight with its forms to get my data, so I decided I'd better automate this process.
+I hated having to login to NAB's clunky Internet banking and fight with its forms to get my data, so I decided I'd better automate this process.
 
 This will export all your transactions for all your NAB accounts into nice QIF
 files. You can use QIF to load in your desktop or online account software, such as Quicken/MS Money/Mint/Xero etc.
