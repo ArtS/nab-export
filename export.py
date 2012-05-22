@@ -38,9 +38,10 @@ def get_last_transaction_date(b, account):
 def remove_pending_transactions(trans):
 
     res = []
+    payees_ignore = ['EFTPOS DEBIT PURCH', 'EFTPOS DEBIT PURCHASE-FLEXIPAY']
     for t in trans:
 
-        if t['payee'] == 'EFTPOS DEBIT PURCHASE-FLEXIPAY' or\
+        if t['payee'] in payees_ignore or\
            t['memo'] == 'MISCELLANEOUS DEBIT DEBIT':
             print('\tSkipping transaction %s' % t)
         else:
