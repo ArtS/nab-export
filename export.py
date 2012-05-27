@@ -94,7 +94,7 @@ def export():
                                              trans)
 
         if not trans:
-            print "\n\tNo valid transactions retrieved for the account"
+            print "\n\tNo transactions saved for the account."
             continue
 
         db.save_transactions(account['name'],
@@ -107,7 +107,7 @@ def export():
                           account['acc_no'],
                           trans)
 
-        print('\tSaved %s transactions' % len(trans))
+        print('\n\tSaved %s transactions' % len(trans))
 
 
 if __name__ == "__main__":
