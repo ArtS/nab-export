@@ -10,8 +10,11 @@ from bs4.element import NavigableString
 from lib.tools import make_password, get_credentials, write_step, read_step
 from lib.tools import parse_transaction_date
 
-
-logged_in_url = 'https://ib.nab.com.au/nabib/acctInfo_acctBal.ctl'
+#
+# There's could be more than one URL when you log in
+#
+logged_in_urls = ['https://ib.nab.com.au/nabib/acctInfo_acctBal.ctl',
+                  'https://ib.nab.com.au/nabib/loginProcess.ctl']
 
 
 def get_accounts(text):
@@ -54,11 +57,14 @@ def get_accounts(text):
     return accounts
 
 
-def check_url(b, expected_url):
+def check_url(b, expected_urls):
 
-    if b.geturl() != expected_url:
-        print('\tExpected URL: ', expected_url)
-        print('\tCurrent URL: ', b.geturl())
+    if type(expected_urls) == 'str':
+        expected_urls = [expected_urls]
+
+    if not b.geturl() in expected_urls:
+        print('\tExpected URL: %s' % expected_urls)
+        print('\tCurrent URL: %s' % b.geturl())
         return False
 
     return True
@@ -127,7 +133,7 @@ def login():
     print('Logging in...')
     b.submit()
 
-    if not check_url(b, logged_in_url):
+    if not check_url(b, logged_in_urls):
         print('Error logging in.')
         return None
 
@@ -174,9 +180,9 @@ def open_account_transactions_page(b, account):
     account_id = account[0]
     account_type = account[1]
 
-    if b.geturl() != logged_in_url:
-        print('\tCurrent url is %s, need to open accounts page at %s' %
-              (b.geturl(), logged_in_url))
+    if not b in logged_in_urls:
+        print('\tCurrent url is %s, need to open accounts page in %s' %
+              (b.geturl(), logged_in_urls[0]))
         b.open('https://ib.nab.com.au/nabib/acctInfo_acctBal.ctl')
 
     print('\tOpening transaction page for account %s... ' % account_id)
