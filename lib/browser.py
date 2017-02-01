@@ -78,10 +78,15 @@ def login():
 
     b = Browser()
     b.set_handle_robots(False)
-    b.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
+    b.addheaders = [
+        ('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1'),
+        ('Connection', 'keep-alive'),
+        ('Cache-Control', 'max-age=0'),
+        ('Accept-Encoding', 'gzip, deflate, br')
+    ]
 
     b.set_handle_equiv(True)
-    #b.set_handle_gzip(True)
+    b.set_handle_gzip(True)
     b.set_handle_redirect(True)
     b.set_handle_referer(True)
     b.set_handle_robots(False)
@@ -130,10 +135,8 @@ def login():
     b_data.value = '1332067415674;z=-660*-600;s=1440x900x24;h=325b2e41;l=en-US;p=MacIntel;i=0;j=7;k=0;c=81d6c46c:,799e53ad:,f67180ac:,c801b011:,9ed81ce8:,68bab54a:,3db529ef,97362cfc;'
 
     b.form.new_control('text', 'login', {'value': ''})
-    b.form.new_control('text', 'jsEnabled', {'value': ''})
     b.form.fixup()
     b['login'] = 'Login'
-    b['jsEnabled'] = 'true'
 
     # b.form.new_control('text', 'hidden', {'name': 'login', 'value': 'Login'})
     # b.form.new_control('text', 'hidden', {'name': 'jsEnabled', 'value': 'True'})
