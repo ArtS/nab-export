@@ -90,7 +90,7 @@ def login():
     b.set_handle_refresh(_http.HTTPRefreshProcessor(), max_time=1)
 
     # Want debugging messages?
-    #b.set_debug_http(True)
+    b.set_debug_http(True)
     b.set_debug_redirects(True)
     b.set_debug_responses(True)
 
@@ -120,7 +120,8 @@ def login():
     newPassword = make_password(creds[1], webKey, webAlpha)
 
     usernameCtrl = b.form.find_control(name='userid')
-    passwordCtrl = b.form.find_control(name='password')
+    passwordCtrl = b.form.find_control(name='encoded-password')
+    passwordCtrl.readonly = False
     usernameCtrl.value = creds[0]
     passwordCtrl.value = newPassword
 
@@ -128,7 +129,14 @@ def login():
     b_data.readonly = False
     b_data.value = '1332067415674;z=-660*-600;s=1440x900x24;h=325b2e41;l=en-US;p=MacIntel;i=0;j=7;k=0;c=81d6c46c:,799e53ad:,f67180ac:,c801b011:,9ed81ce8:,68bab54a:,3db529ef,97362cfc;'
 
-    b.form.new_control('text', 'hidden', {'name': 'login', 'value': 'Login'})
+    b.form.new_control('text', 'login', {'value': ''})
+    b.form.new_control('text', 'jsEnabled', {'value': ''})
+    b.form.fixup()
+    b['login'] = 'Login'
+    b['jsEnabled'] = 'true'
+
+    # b.form.new_control('text', 'hidden', {'name': 'login', 'value': 'Login'})
+    # b.form.new_control('text', 'hidden', {'name': 'jsEnabled', 'value': 'True'})
 
     print('Logging in...')
     b.submit()
