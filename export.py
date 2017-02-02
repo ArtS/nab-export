@@ -17,7 +17,7 @@ def get_last_transaction_date(b, account):
 
     if not last_date:
 
-        print('\tWe don\'t seem to have any transactins for account \'%s\' in database.' % account['name'])
+        print('\tWe don\'t seem to have any transactions for account \'%s\' in database.' % account['name'])
         print('\tThat\'s OK though! Let\'s retrieve transactions for last %s days' % MAX_HISTORY_DAYS)
 
         last_date = today - timedelta(days=MAX_HISTORY_DAYS)
@@ -77,7 +77,8 @@ def export():
         return
 
     for account in accounts:
-
+        account['acc_no'] = account['acc_no'].replace('-', '')
+        account['bsb'] = account['bsb'].replace('-', '')
         print('\nProcessing account \'%s\' (BSB: %s Number: %s)' % (
             account['name'], account['bsb'], account['acc_no']))
 

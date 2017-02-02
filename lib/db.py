@@ -26,10 +26,10 @@ def init_db():
                 payee text,
                 memo text,
 
-                debit_amount text,
-                credit_amount text,
+                debit_amount double,
+                credit_amount double,
 
-                balance text
+                balance double
               )''')
     return db
 

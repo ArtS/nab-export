@@ -1,4 +1,3 @@
-
 import re
 from datetime import datetime
 
@@ -170,14 +169,20 @@ def extract_transactions(content):
         payee = details[0] if len(details) > 0 else ''
         memo = details[1] if len(details) > 1 else ''
 
+        def toFloat(text):
+            print(text)
+            if len(text) > 0:
+                return float(text[:-3].strip().replace(',', ''))
+            return None
+
         transactions.append({
             'date': tds[0].text,
             'date_obj': parse_transaction_date(tds[0].text),
             'payee': payee,
             'memo': memo,
-            'debit_amount': tds[2].text,
-            'credit_amount': tds[3].text,
-            'balance': tds[4].text
+            'debit_amount': toFloat(tds[2].text),
+            'credit_amount': toFloat(tds[3].text),
+            'balance': toFloat(tds[4].text)
         })
 
     return transactions
@@ -247,15 +252,6 @@ def query_server_transactions(b, start_date):
     response = b.response().read()
     if not check_url(b, URL_SUBMIT_HISTORY_FORM):
         return
-
-    
-    # Check we actually got what we asked for
-    # expr = 'Period:\\r\\n\\s*' + start_date.strftime('%d/%m/%y')
-
-    # if not re.findall(expr, response):
-    #     print('\tIt doesn\'t look like I was able to get transactions')
-    #     print('\tCannot find string : %s in response' % expr)
-    #     return None
 
     print('\tOK')
 
