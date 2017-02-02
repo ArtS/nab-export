@@ -3,3 +3,4 @@ transactions.db
 *.pyc
 .DS_Store
 .venv
+**/*.qif

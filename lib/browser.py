@@ -19,7 +19,7 @@ logged_in_urls = ['https://ib.nab.com.au/nabib/acctInfo_acctBal.ctl',
 
 def get_accounts(text):
 
-    soup = BeautifulSoup(text)
+    soup = BeautifulSoup(text, "html.parser")
     account_divs = soup.select('.acctDetails')
     if len(account_divs) == 0:
         print('\tNo accounts found.')
@@ -95,7 +95,7 @@ def login():
     b.set_handle_refresh(_http.HTTPRefreshProcessor(), max_time=1)
 
     # Want debugging messages?
-    b.set_debug_http(True)
+    #b.set_debug_http(True)
     b.set_debug_redirects(True)
     b.set_debug_responses(True)
 
@@ -138,9 +138,6 @@ def login():
     b.form.fixup()
     b['login'] = 'Login'
 
-    # b.form.new_control('text', 'hidden', {'name': 'login', 'value': 'Login'})
-    # b.form.new_control('text', 'hidden', {'name': 'jsEnabled', 'value': 'True'})
-
     print('Logging in...')
     b.submit()
 
@@ -154,7 +151,7 @@ def login():
 
 def extract_transactions(content):
 
-    soup = BeautifulSoup(content)
+    soup = BeautifulSoup(content, "html.parser")
     rows = soup.select('#transactionHistoryTable tbody tr')
     transactions = []
 
@@ -233,12 +230,15 @@ def get_servers_today_date(b):
 
 
 def query_server_transactions(b, start_date):
-
+    TRANSACTIONS_PER_PAGE = 200
     end_date = get_servers_today_date(b)
     b.select_form(name='transactionHistoryForm')
+    b.form['periodModeSelect'] = ['Custom']
     b.form['periodFromDate'] = start_date.strftime('%d/%m/%y')
-
+    b.form['transactionsPerPage'] = [str(TRANSACTIONS_PER_PAGE)]
+#https://ib.nab.com.au/nabib/transactionHistoryDisplay.ctl?filterIndicator=true
     URL_SUBMIT_HISTORY_FORM = 'https://ib.nab.com.au/nabib/transactionHistoryValidate.ctl'
+    # URL_SUBMIT_HISTORY_FORM = 'https://ib.nab.com.au/nabib/transactionHistoryDisplay.ctl?filterIndicator=true'
     b.form.action = URL_SUBMIT_HISTORY_FORM
 
     print('\tGetting transactions from %s to %s' % (start_date, end_date))
@@ -248,13 +248,14 @@ def query_server_transactions(b, start_date):
     if not check_url(b, URL_SUBMIT_HISTORY_FORM):
         return
 
+    
     # Check we actually got what we asked for
-    expr = 'Period:\\r\\n\\s*' + start_date.strftime('%d/%m/%y')
+    # expr = 'Period:\\r\\n\\s*' + start_date.strftime('%d/%m/%y')
 
-    if not re.findall(expr, response):
-        print('\tIt doesn\'t look like I was able to get transactions')
-        print('\tCannot find string : %s in response' % expr)
-        return None
+    # if not re.findall(expr, response):
+    #     print('\tIt doesn\'t look like I was able to get transactions')
+    #     print('\tCannot find string : %s in response' % expr)
+    #     return None
 
     print('\tOK')
 
@@ -262,7 +263,7 @@ def query_server_transactions(b, start_date):
 
 
 def get_all_transactions(b, account, start_date):
-
+    TRANSACTIONS_PER_PAGE = 200
     b = query_server_transactions(b, start_date)
     if not b:
         return None
@@ -273,36 +274,32 @@ def get_all_transactions(b, account, start_date):
     while True:
 
         cont = b.response().read()
-        soup = BeautifulSoup(cont)
+        soup = BeautifulSoup(cont, "html.parser")
 
-        input = soup.select('input[name="pageNo"]')
-        if not input:
-            currPage = 1
-        else:
-            currPage = int(input[0].attrs['value'])
-        print('\tGetting transactions from page %s' % currPage)
-
+        currPage = -1
         new_trans = extract_transactions(cont)
+
         if len(new_trans) == 0:
             print('\tNo transactions found on page %s, that\'s strange.')
         else:
             trans.extend(new_trans)
+            print('\t' + str(len(new_trans)) + ' transactions added.')
 
-        # Links to all pages with history are kind of fucked-up
-        # there's no classes on them to identify, hence the need to find
-        # closest unique element and go via siblings
-        currPage += 1
-        transExp = soup.select('#transactionExport')[0]
+        # get transaction count
+        rawTransCount = soup.find_all('td', text=re.compile('Found:'))
+        if rawTransCount is None:
+            print('No transaction count found, must be error')
+            return None
 
-        # :contains does not seem to work, using .find()
-        pageLink = list(transExp.nextSiblingGenerator())[1].find('a', text=str(currPage))
-        if not pageLink:
-            print('\tNo more pages available, finished processing')
+        transactionCount = int(rawTransCount[0].get_text().split(' ')[1])
+        if len(trans) >= transactionCount:
+            print('No more transactions')
             break
 
-        print('\tOpening page #%s...' % currPage)
-        b.open('https://ib.nab.com.au' + pageLink.attrs['href'])
-        print('\tOK')
+        currPage += 1
+
+        print('\tOpening page #%d...' % currPage)
+        b.open('https://ib.nab.com.au/nabib/transactionHistoryGetSettings.ctl#' + str(currPage))
 
     return trans
 

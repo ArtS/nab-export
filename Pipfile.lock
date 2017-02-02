@@ -1,16 +1,14 @@
 {
-    "default": {},
-    "develop": {},
     "_meta": {
         "sources": [
             {
-                "url": "https://pypi.python.org/simple",
+                "url": "https://pypi.org/",
                 "verify_ssl": true
             }
         ],
         "requires": {},
-        "hash": {
-            "sha256": "cb65967bdf3a7372749ce6144be4ee63f412aeeac624342fda3a2b58b1c43c15"
-        }
-    }
+        "Pipfile-sha256": "c6237aea5578bb6f469f024bcdb96a92245416f4cb37295b957fb7a7d397430e"
+    },
+    "default": {},
+    "develop": {}
 }
