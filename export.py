@@ -103,11 +103,6 @@ def export():
                              account['acc_no'],
                              trans)
 
-        qif.save_qif_file(account['name'],
-                          account['bsb'],
-                          account['acc_no'],
-                          trans)
-
         print('\n\tSaved %s transactions' % len(trans))
 
 
