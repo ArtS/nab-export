@@ -1,14 +1,19 @@
 {
     "_meta": {
+        "hash": {
+            "sha256": "4b43f019d40f1cb221f5bb3b6f912f4c3b26231c8273272203fb33f1a6e11d7d"
+        },
+        "requires": {},
         "sources": [
             {
                 "url": "https://pypi.org/",
                 "verify_ssl": true
             }
-        ],
-        "requires": {},
-        "Pipfile-sha256": "c6237aea5578bb6f469f024bcdb96a92245416f4cb37295b957fb7a7d397430e"
+        ]
     },
-    "default": {},
+    "default": {
+        "beautifulsoup4": "*",
+        "mechanize": "*"
+    },
     "develop": {}
 }

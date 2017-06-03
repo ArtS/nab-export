@@ -64,36 +64,30 @@ def writeQIF(trans, creds):
             f.write('^\n') # end of record
 
 
-def make_password(password, key, alphabet):
+def make_password(password, webKey, webAlpha):
+    """
+    Python implementation of the 'encode(g,c,b)' JS function
+    """
+    for d in range(len(webAlpha)):
+        if d != webAlpha.index(webAlpha[d]):
+            b = webAlpha[0:d] + webAlpha[d+1:]
 
-    # No idea why this is neeed. Seems to check for duplicates
-    # Why they didn't do that on server? Stupid...
-    for i in range(0, len(alphabet)):
-        if i != alphabet.index(alphabet[i]):
-            alphabet = alphabet[0, i] + alphabet[i+1:]
+    e = ['' for i in range(len(password))]
+    for d in range(len(password)):
+        e[d] = password[d]
+        try:
+            f = webAlpha.index(password[d])
+            if f >= 0 and d < len(webKey):
+                h = webAlpha.index(webKey[d])
+                if h >=0:
+                    f -= h
+                    if f < 0:
+                        f += len(webAlpha)
+                    e[d] = webAlpha[f]
+        except ValueError:
+            continue
 
-    # Now here's funny bit.
-    # We take a character from password and corresponding (by index) character from
-    # password key (which changes every page load).
-    # Then we calculate the length between pasword chararcer and corersponding
-    # key character in the alphabet.
-    r = []
-    for i in range(0, len(password)):
-
-        if password[i] in alphabet:
-            pi = alphabet.index(password[i])
-            ki = alphabet.index(key[i])
-            ni = pi - ki
-            if ni < 0:
-                ni = ni + len(alphabet)
-            r.append(alphabet[ni])
-
-    return ''.join(r)
-
-# Test case for password 'encoding' function.
-#hashedPwd = make_password('qqqqqqqq', 'jTECuQc6', '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
-#expectedPwd = '7xMOWAek'
-#print hashedPwd + ' == ' + expectedPwd
+    return "".join(e)
 
 
 def parse_transaction_date(text):

@@ -129,9 +129,12 @@ def login():
     usernameCtrl.value = creds[0]
     passwordCtrl.value = newPassword
 
+    rawPassword = b.form.find_control(name='password')
+    rawPassword.value = ''
+
     b_data = b.form.find_control(name='browserData')
     b_data.readonly = False
-    b_data.value = '1332067415674;z=-660*-600;s=1440x900x24;h=325b2e41;l=en-US;p=MacIntel;i=0;j=7;k=0;c=81d6c46c:,799e53ad:,f67180ac:,c801b011:,9ed81ce8:,68bab54a:,3db529ef,97362cfc;'
+    b_data.value = '1496488636702;z=-600*-600;s=1440x900x24;l=en-GB;p=MacIntel;h=1Z3uS;i=33;j=117;k=16;c=d3d3Lm5hYi5jb20uYXUvc3RhdGljL0lCL2xvZ2luQmFubmVyLw;n=bG9naW5Gb3Jt,bG9naW5UaXBz;e=Y3ZpZXcz;b=1JE4yQ,24uNEg,2wDBVE;a=1GeUEa,1TaPsP,1ZO-16,1rEqxh,2.jbKy,21b2P5,2Jrfu6,2LmSef,2TqVCf,2Ubrnm,2dgqqB,3MkcJZ,JIGdn,eqyBa,lTM8m;o=Y29uc29sZQ,Y2hyb21l,YW5ndWxhcg,YXBpTG9nb3V0QXBw,Z2V0QnJvd3Nlcg,alF1ZXJ5MTEwMjA4MzYwNzIxMDQ4NTY0MjY0;t=fo4f0ot8-600.j3h6ekzf.877;d=YWNz,Ym9keWNvbnRhaW5lcg,Ym9keWNvbnRhaW5lcl9pbnNpZGU,YmFubmVy,ZXJyb3JNZXNzYWdl,ZXJyb3JOdW1iZXI,Zm9vdGVyX2xvZ2lu,ZmFuY3ktYmctZQ,ZmFuY3ktYmctbg,ZmFuY3ktYmctbmU,ZmFuY3ktYmctbnc,ZmFuY3ktYmctc2U,ZmFuY3ktYmctc3c,ZmFuY3ktYmctcw,ZmFuY3ktYmctdw,ZmFuY3lib3gtY2xvc2U,ZmFuY3lib3gtaW5uZXI,ZmFuY3lib3gtb3V0ZXI,ZmFuY3lib3gtb3ZlcmxheQ,ZmFuY3lib3gtbG9hZGluZw,ZmFuY3lib3gtbGVmdA,ZmFuY3lib3gtbGVmdC1pY28,ZmFuY3lib3gtcmlnaHQ,ZmFuY3lib3gtcmlnaHQtaWNv,ZmFuY3lib3gtd3JhcA,ZmFuY3lib3gtdG1w,aGVhZGVy,aWItdXNlci10ZXh0,bG9naW5Gb3Jt,bGlua3Mtc29jaWFsLW1lZGlh,bWFpblBhZ2U;u=ZHVtbXk,ZW5jb2RlZC1wYXNzd29yZA,d2ViQWxwaGE,d2ViS2V5;v=bmVlZC1oZWxw;x=1IVClf,1KxWAP,1SURBl,1Wl6jj,1vhE2s,1vstXM,1wlzQT,1yYwT1,2-PmTs,2APt-x,2FOxw2,2Lnxl,2ceYJE,2feZ0x,2g4LgQ,2h079f,2oK-0A,2ueFc7,34liSK,39CTWT,3GxyfT,3T6P3H,3XvqP.,3kcnCG,3ktPLw,3l39dK,660SR,68npD,8Vcav,JOS8B,cTezC,dwOmq,ix9Ek,s-ZAp;q=ZnJhdWQ;w=428866'
 
     b.form.new_control('text', 'login', {'value': ''})
     b.form.fixup()
