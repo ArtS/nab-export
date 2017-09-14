@@ -2,15 +2,18 @@
 
 import re
 import os
+import time
 
 
 def get_qif_name(start_date, end_date):
 
     date_format = '%Y.%m.%d'
+    start = time.strptime(start_date, "%d %b %y")
+    end = time.strptime(end_date, "%d %b %y")
 
-    return '%s - %s.qif' % (
-        start_date.strftime(date_format),
-        end_date.strftime(date_format)
+    return '%d.%d.%d - %d.%d.%d.qif' % (
+        start[0], start[1], start[2],
+        end[0], end[1], end[2],
     )
 
 
