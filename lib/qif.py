@@ -59,8 +59,6 @@ def write_qif(acc_name, trans, file_name):
             else:
                 amount = t['credit_amount']
                 sign = '+'
-
-            amount = re.sub('\s(CR|DR)$', '', amount)
             f.write('T%s%s\n' % (sign, amount))  # amount
 
             f.write('P%s\n' % t['payee'])  # payee

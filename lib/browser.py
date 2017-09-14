@@ -240,9 +240,9 @@ def query_server_transactions(b, start_date):
     b.form['periodModeSelect'] = ['Custom']
     b.form['periodFromDate'] = start_date.strftime('%d/%m/%y')
     b.form['transactionsPerPage'] = [str(TRANSACTIONS_PER_PAGE)]
-# https://ib.nab.com.au/nabib/transactionHistoryDisplay.ctl?filterIndicator=true
-# https://ib.nab.com.au/nabib/transactionHistoryDisplay.ctl?filterIndicator=true
-    # URL_SUBMIT_HISTORY_FORM = 'https://ib.nab.com.au/nabib/transactionHistoryDisplay.ctl?filterIndicator=true'
+    # https://ib.nab.com.au/nabib/transactionHistoryDisplay.ctl?filterIndicator=true
+    # https://ib.nab.com.au/nabib/transactionHistoryDisplay.ctl?filterIndicator=true
+    URL_SUBMIT_HISTORY_FORM = 'https://ib.nab.com.au/nabib/transactionHistoryDisplay.ctl?filterIndicator=true'
     b.form.action = URL_SUBMIT_HISTORY_FORM
 
     print('\tGetting transactions from %s to %s' % (start_date, end_date))
@@ -267,7 +267,6 @@ def get_all_transactions(b, account, start_date):
 
     # Extract and store all transactions into db
     while True:
-
         cont = b.response().read()
         soup = BeautifulSoup(cont, "html.parser")
 
@@ -294,7 +293,6 @@ def get_all_transactions(b, account, start_date):
         currPage += 1
 
         print('\tOpening page #%d...' % currPage)
-        b.open(
         b.open(
             'https://ib.nab.com.au/nabib/transactionHistoryGetSettings.ctl#' + str(currPage))
 
