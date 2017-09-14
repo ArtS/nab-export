@@ -41,8 +41,8 @@ def get_credentials():
         return lines
 
 
-"""See http://en.wikipedia.org/wiki/Quicken_Interchange_Format for more info."""
 def writeQIF(trans, creds):
+    """See http://en.wikipedia.org/wiki/Quicken_Interchange_Format for more info."""
 
     accName = creds[2] if len(creds) > 2 else 'QIF Account'
 
@@ -50,18 +50,18 @@ def writeQIF(trans, creds):
 
         # Write header
         f.write('!Account\n')
-        f.write('N' + accName +'\n')
+        f.write('N' + accName + '\n')
         f.write('TCCard\n')
         f.write('^\n')
         f.write('!Type:CCard\n')
 
         for t in trans:
-            f.write('C\n') # status - uncleared
-            f.write('D' + t.date + '\n') # date
-            f.write('T' + t.amount.replace('$', '') + '\n') # amount
-            f.write('M' + re.sub('\s+', ' ', t.name + ' ' + t.desc) + '\n') # memo
-            #f.write('P' + t.desc.replace('\t', ' ') + '\n') # payee
-            f.write('^\n') # end of record
+            f.write('C\n')  # status - uncleared
+            f.write('D' + t.date + '\n')  # date
+            f.write('T' + t.amount.replace('$', '') + '\n')  # amount
+            f.write('M' + re.sub('\s+', ' ', t.name + ' ' + t.desc) + '\n')  # memo
+            # f.write('P' + t.desc.replace('\t', ' ') + '\n') # payee
+            f.write('^\n')  # end of record
 
 
 def make_password(password, webKey, webAlpha):
@@ -70,7 +70,7 @@ def make_password(password, webKey, webAlpha):
     """
     for d in range(len(webAlpha)):
         if d != webAlpha.index(webAlpha[d]):
-            b = webAlpha[0:d] + webAlpha[d+1:]
+            b = webAlpha[0:d] + webAlpha[d + 1:]
 
     e = ['' for i in range(len(password))]
     for d in range(len(password)):
@@ -79,7 +79,7 @@ def make_password(password, webKey, webAlpha):
             f = webAlpha.index(password[d])
             if f >= 0 and d < len(webKey):
                 h = webAlpha.index(webKey[d])
-                if h >=0:
+                if h >= 0:
                     f -= h
                     if f < 0:
                         f += len(webAlpha)

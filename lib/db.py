@@ -44,7 +44,7 @@ def get_last_transaction_date(bsb, acc_no):
                      limit 1
                      ''',
                      [bsb, acc_no]
-                    )
+                     )
 
     row = cur.fetchall()
     if not row:
@@ -55,43 +55,43 @@ def get_last_transaction_date(bsb, acc_no):
 
 def save_transaction(
 
-                     name,
-                     bsb,
-                     acc_no,
+    name,
+    bsb,
+    acc_no,
 
-                     tran_date_txt,
-                     tran_date,
+    tran_date_txt,
+    tran_date,
 
-                     payee,
-                     memo,
+    payee,
+    memo,
 
-                     debit_amount,
-                     credit_amount,
+    debit_amount,
+    credit_amount,
 
-                     balance
-                    ):
+    balance
+):
 
     global db
 
     seconds = int(time.mktime(tran_date.utctimetuple()))
     db.execute('insert into transactions values (null, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                (
-                name,
-                bsb,
-                acc_no,
+                   name,
+                   bsb,
+                   acc_no,
 
-                seconds,
-                tran_date_txt,
+                   seconds,
+                   tran_date_txt,
 
-                payee,
-                memo,
+                   payee,
+                   memo,
 
-                debit_amount,
-                credit_amount,
+                   debit_amount,
+                   credit_amount,
 
-                balance
+                   balance
                )
-              )
+               )
     db.commit()
 
 
@@ -113,7 +113,7 @@ def save_transactions(name, bsb, acc_no, transactions):
                          trans['debit_amount'],
                          trans['credit_amount'],
                          trans['balance']
-                        )
+                         )
 
 
 def is_transaction_in_db(bsb, acc_no, tran):

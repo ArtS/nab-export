@@ -1,13 +1,11 @@
 import re
 from datetime import datetime
 
-from mechanize import Browser, ControlNotFoundError
-from mechanize import _http
+from mechanize import Browser, ControlNotFoundError, _http
 from bs4 import BeautifulSoup
 from bs4.element import NavigableString
 
-from lib.tools import make_password, get_credentials, write_step, read_step
-from lib.tools import parse_transaction_date
+from lib.tools import make_password, get_credentials, write_step, read_step, parse_transaction_date
 
 #
 # There's could be more than one URL when you log in
@@ -94,11 +92,9 @@ def login():
     b.set_handle_refresh(_http.HTTPRefreshProcessor(), max_time=1)
 
     # Want debugging messages?
-    #b.set_debug_http(True)
+    # b.set_debug_http(True)
     b.set_debug_redirects(True)
     b.set_debug_responses(True)
-
-
     print 'Opening main page...'
     b.open('http://www.nab.com.au')
     print 'OK'
@@ -244,8 +240,8 @@ def query_server_transactions(b, start_date):
     b.form['periodModeSelect'] = ['Custom']
     b.form['periodFromDate'] = start_date.strftime('%d/%m/%y')
     b.form['transactionsPerPage'] = [str(TRANSACTIONS_PER_PAGE)]
-#https://ib.nab.com.au/nabib/transactionHistoryDisplay.ctl?filterIndicator=true
-    URL_SUBMIT_HISTORY_FORM = 'https://ib.nab.com.au/nabib/transactionHistoryValidate.ctl'
+# https://ib.nab.com.au/nabib/transactionHistoryDisplay.ctl?filterIndicator=true
+# https://ib.nab.com.au/nabib/transactionHistoryDisplay.ctl?filterIndicator=true
     # URL_SUBMIT_HISTORY_FORM = 'https://ib.nab.com.au/nabib/transactionHistoryDisplay.ctl?filterIndicator=true'
     b.form.action = URL_SUBMIT_HISTORY_FORM
 
@@ -298,8 +294,8 @@ def get_all_transactions(b, account, start_date):
         currPage += 1
 
         print('\tOpening page #%d...' % currPage)
-        b.open('https://ib.nab.com.au/nabib/transactionHistoryGetSettings.ctl#' + str(currPage))
+        b.open(
+        b.open(
+            'https://ib.nab.com.au/nabib/transactionHistoryGetSettings.ctl#' + str(currPage))
 
     return trans
-
-

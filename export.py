@@ -17,8 +17,10 @@ def get_last_transaction_date(b, account):
 
     if not last_date:
 
-        print('\tWe don\'t seem to have any transactions for account \'%s\' in database.' % account['name'])
-        print('\tThat\'s OK though! Let\'s retrieve transactions for last %s days' % MAX_HISTORY_DAYS)
+        print('\tWe don\'t seem to have any transactions for account \'%s\' in database.' %
+              account['name'])
+        print('\tThat\'s OK though! Let\'s retrieve transactions for last %s days' %
+              MAX_HISTORY_DAYS)
 
         last_date = today - timedelta(days=MAX_HISTORY_DAYS)
 
@@ -28,8 +30,10 @@ def get_last_transaction_date(b, account):
               {'acc': account['acc_no']})
 
         if (today - last_date).days > MAX_HISTORY_DAYS:
-            print('Looks like the oldest transaction in the DB is older than %s days' % MAX_HISTORY_DAYS)
-            print('Retrieving transactions for only last %s days' % MAX_HISTORY_DAYS)
+            print('Looks like the oldest transaction in the DB is older than %s days' %
+                  MAX_HISTORY_DAYS)
+            print('Retrieving transactions for only last %s days' %
+                  MAX_HISTORY_DAYS)
             last_date = today - timedelta(days=MAX_HISTORY_DAYS)
 
     return last_date
