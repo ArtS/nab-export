@@ -2,16 +2,17 @@
 
 import re
 import os
+import datetime
 
 
 def get_qif_name(start_date, end_date):
-
-    date_format = '%Y.%m.%d'
-
-    return  '%s - %s.qif' % (
-                              start_date.strftime(date_format),
-                              end_date.strftime(date_format)
-                            )
+    """
+    Takes 2 datetime.datetime objects and returns a string representing the QIF file name
+    """
+    return '20%s - 20%s.qif' % (
+        datetime.datetime.strftime(start_date, "%y.%m.%d"),
+        datetime.datetime.strftime(end_date, "%y.%m.%d"),
+    )
 
 
 def is_file_present(full_path):
@@ -47,11 +48,11 @@ def write_qif(acc_name, trans, file_name):
         # Write header
         f.write('!Type:Bank\n')
         #f.write('N' + acc_name +'\n')
-        #f.write('^\n')
+        # f.write('^\n')
 
         for t in trans:
-            f.write('C\n') # status - uncleared
-            f.write('D%s\n' % t['date_obj'].strftime('%d/%m/%y')) # date
+            f.write('C\n')  # status - uncleared
+            f.write('D%s\n' % t['date_obj'].strftime('%d/%m/%y'))  # date
 
             if t['debit_amount']:
                 amount = t['debit_amount']
@@ -59,14 +60,12 @@ def write_qif(acc_name, trans, file_name):
             else:
                 amount = t['credit_amount']
                 sign = '+'
+            f.write('T%s%s\n' % (sign, amount))  # amount
 
-            amount = re.sub('\s(CR|DR)$', '', amount)
-            f.write('T%s%s\n' % (sign, amount)) # amount
+            f.write('P%s\n' % t['payee'])  # payee
+            f.write('M%s\n' % t['memo'])  # memo
 
-            f.write('P%s\n' % t['payee']) # payee
-            f.write('M%s\n' % t['memo']) # memo
-
-            f.write('^\n') # end of record
+            f.write('^\n')  # end of record
 
 
 def save_qif_file(acc_name, bsb, acc_n, trans):

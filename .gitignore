@@ -2,3 +2,7 @@ transactions.db
 .credentials
 *.pyc
 .DS_Store
+.venv
+.vscode/
+**/*.qif.*
+**/*.qif
