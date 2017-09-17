@@ -2,18 +2,16 @@
 
 import re
 import os
-import time
+import datetime
 
 
 def get_qif_name(start_date, end_date):
-
-    date_format = '%Y.%m.%d'
-    start = time.strptime(start_date, "%d %b %y")
-    end = time.strptime(end_date, "%d %b %y")
-
-    return '%d.%d.%d - %d.%d.%d.qif' % (
-        start[0], start[1], start[2],
-        end[0], end[1], end[2],
+    """
+    Takes 2 datetime.datetime objects and returns a string representing the QIF file name
+    """
+    return '20%s - 20%s.qif' % (
+        datetime.datetime.strftime(start_date, "%y.%m.%d"),
+        datetime.datetime.strftime(end_date, "%y.%m.%d"),
     )
 
 

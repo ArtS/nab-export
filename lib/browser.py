@@ -12,6 +12,7 @@ from lib.tools import make_password, get_credentials, write_step, read_step, par
 #
 logged_in_urls = ['https://ib.nab.com.au/nabib/acctInfo_acctBal.ctl',
                   'https://ib.nab.com.au/nabib/loginProcess.ctl']
+TRANSACTIONS_PER_PAGE = 200
 
 
 def get_accounts(text):
@@ -234,7 +235,7 @@ def get_servers_today_date(b):
 
 
 def query_server_transactions(b, start_date):
-    TRANSACTIONS_PER_PAGE = 200
+
     end_date = get_servers_today_date(b)
     b.select_form(name='transactionHistoryForm')
     b.form['periodModeSelect'] = ['Custom']
@@ -258,7 +259,6 @@ def query_server_transactions(b, start_date):
 
 
 def get_all_transactions(b, account, start_date):
-    TRANSACTIONS_PER_PAGE = 200
     b = query_server_transactions(b, start_date)
     if not b:
         return None

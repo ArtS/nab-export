@@ -3,6 +3,7 @@
 import unittest
 
 from lib import qif
+import datetime
 
 
 class TestQIF(unittest.TestCase):
@@ -12,8 +13,11 @@ class TestQIF(unittest.TestCase):
 
     def test_get_qif_name(self):
 
-        name = qif.get_qif_name('1 Jan 10', '13 Apr 12')
-        self.assertEqual(name, '2010.1.1 - 2012.4.13.qif')
+        name = qif.get_qif_name(
+            datetime.datetime(2010, 1, 1, 00, 00, 00),
+            datetime.datetime(2012, 4, 13, 00, 00, 00)
+        )
+        self.assertEqual(name, '2010.01.01 - 2012.04.13.qif')
 
     def test_is_file_present(self):
 
