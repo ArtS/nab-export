@@ -32,9 +32,9 @@ python export.py
 
 #### Command Line Arguments
 
-##### --qif
+##### --no-qif
 
-Exports transactions to QIF files
+Skips transactions exporting to QIF files
 
 ### Privacy and Security
 

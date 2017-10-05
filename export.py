@@ -110,7 +110,7 @@ def export(options):
                              account['acc_no'],
                              trans)
 
-        if "--qif" in options:
+        if "--no-qif" not in options:
             qif.save_qif_file(account['name'],
                               account['bsb'],
                               account['acc_no'],
