@@ -2,8 +2,8 @@
 
 
 from datetime import timedelta
-
 from lib import db, browser, qif
+import sys
 
 
 def get_last_transaction_date(b, account):
@@ -64,7 +64,10 @@ def exclude_existing_in_db_trans(bsb, acc_n, trans):
     return res
 
 
-def export():
+def export(options):
+    """
+    options: an array of cli options
+    """
 
     db.init_db()
     if not db:
@@ -107,13 +110,14 @@ def export():
                              account['acc_no'],
                              trans)
 
-        qif.save_qif_file(account['name'],
-                          account['bsb'],
-                          account['acc_no'],
-                          trans)
+        if "--no-qif" not in options:
+            qif.save_qif_file(account['name'],
+                              account['bsb'],
+                              account['acc_no'],
+                              trans)
 
         print('\n\tSaved %s transactions' % len(trans))
 
 
 if __name__ == "__main__":
-    export()
+    export(sys.argv)

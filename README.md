@@ -4,11 +4,9 @@
 
 I hated having to login to NAB's clunky Internet banking and fight with its forms to get my data, so I decided I'd better automate this process.
 
-This will export all your transactions for all your NAB accounts into nice QIF
-files. You can use QIF to load in your desktop or online account software, such as Quicken/MS Money/Mint/Xero etc.
+nab-export exports all of your transactions for all your NAB accounts to both a Sqlite database and QIF files. Import these QIF file into your desktop or online accounting software, such as Quicken/MS Money/Mint/Xero etc.
 
-The tool is smart enough not to export pending/clearing trasactions, so in theory
-you shouldn't get any duplicates.
+The tool is smart enough not to export pending/clearing trasactions, so in theory you shouldn't get any duplicates.
 
 ### Prerequisites
 
@@ -31,7 +29,11 @@ python export.py
 
 3. Enter your username and password
 
-each of those will contain your QIF files for a given account.
+#### Command Line Arguments
+
+##### --no-qif
+
+Skips transactions exporting to QIF files
 
 ### Privacy and Security
 
